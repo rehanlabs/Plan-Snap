@@ -9,56 +9,134 @@
     <title>Plan-Snap</title>
     <link rel="shortcut icon" href="TemplateData/logo.png" />
     <link rel="stylesheet" href="TemplateData/style.css" />
+    <script src="https://cdn.socket.io/socket.io-3.0.0.js"></script>
   </head>
 
   <body>
-    <!-- Unity container -->
     <div id="unity-container" style="width: 100%; height: 100%">
-      <canvas id="unity-canvas" style="width: 100%; height: 100%"></canvas>
+      <div id="custom-logo" hidden></div>
+      <div id="custom-loader" hidden>
+        <div class="fill"></div>
+        <div class="label"></div>
+      </div>
+      <div id="unity-fullscreen-button"></div>
+
+      <canvas id="unity-canvas" width="auto" height="auto"></canvas>
+
+      <div id="unity-mobile-warning">
+        <div class="warning-img">
+          <img src="./TemplateData/warning__sign.png" alt="" />
+        </div>
+        <!--
+			<div class="warning-text">
+				<h3>العالم الافتراضي غير متاح</h3>
+				<p>
+					الميتافرس غير متاح حاليًا على الهواتف المحمولة. للحصول على أفضل
+					تجربة، استخدم الإصدار الخاص بمتصفح الويب على سطح المكتب.
+				</p>
+			</div>
+			-->
+      </div>
+    </div>
+
+    <canvas
+      id="inMem_Canvas"
+      height="450"
+      width="450"
+      style="display: none"
+    ></canvas>
+    <canvas
+      id="myCanvas"
+      height="450"
+      width="450"
+      style="display: none"
+    ></canvas>
+
+    <div>
+      <div id="client-stats" class="stats"></div>
+      <div class="row video-group">
+        <div class="col">
+          <p id="local-player-name" class="player-name"></p>
+          <div class="player-with-stats">
+            <div id="local-player" class="player"></div>
+            <div id="local-stats" class="stream-stats stats"></div>
+          </div>
+        </div>
+        <div class="w-100"></div>
+        <div class="col">
+          <div id="remote-playerlist"></div>
+        </div>
+      </div>
     </div>
 
     <script>
       var unityInstance;
+      var mainCanvas = document.getElementById("myCanvas");
+      var mainContext = mainCanvas.getContext('2d');
+      var inMemCanvas = document.getElementById("inMem_Canvas");
+      var inMemContext = inMemCanvas.getContext('2d');
+      var canvasWidth = mainCanvas.width;
+      var canvasHeight = mainCanvas.height;
+      var angle = 0;
 
       var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/New folder.loader.js";
+      var loaderUrl = buildUrl + "/Plan-Snap-25JUL.loader.js";
       var config = {
-        dataUrl: buildUrl + "/New folder.data",
-        frameworkUrl: buildUrl + "/New folder.framework.js",
-        codeUrl: buildUrl + "/New folder.wasm",
-        streamingAssetsUrl: "StreamingAssets",
-        companyName: "DefaultCompany",
-        productName: "Plan-Snap",
-        productVersion: "1.0",
-        autoSyncPersistentDataPath: true,
+      	dataUrl: buildUrl + "/Plan-Snap-25JUL.data",
+      	frameworkUrl: buildUrl + "/Plan-Snap-25JUL.framework.js",
+      	codeUrl: buildUrl + "/Plan-Snap-25JUL.wasm",
+      	streamingAssetsUrl: "StreamingAssets",
+      	companyName: "DefaultCompany",
+      	productName: "Plan-Snap",
+      	productVersion: "1.0",
+      	autoSyncPersistentDataPath: true
       };
 
+      var customLogo = document.getElementById("custom-logo");
+      var customLoader = document.getElementById("custom-loader");
+      var customBar = document.querySelector(".fill");
       var container = document.querySelector("#unity-container");
       var canvas = document.querySelector("#unity-canvas");
+      var loadingBar = document.querySelector("#unity-loading-bar");
+      var progressBarFull = document.querySelector("#unity-progress-bar-full");
+      var fullscreenButton = document.querySelector("#unity-fullscreen-button");
+      var mobileWarning = document.querySelector("#unity-mobile-warning");
 
-      // Mobile check
       if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        container.className = "unity-mobile";
+      	container.className = "unity-mobile";
+      	mobileWarning.style.display = "none";
       } else {
-        canvas.style.width = "100%";
-        canvas.style.height = "100%";
+      	canvas.style.width = "100%";
+      	canvas.style.height = "100%";
+      	mobileWarning.style.display = "none";
       }
 
-      // Load Unity loader and run the game
+      customLogo.style.display = "block";
+      customLoader.style.display = "block";
+
+
       var script = document.createElement("script");
       script.src = loaderUrl;
       script.onload = () => {
-        createUnityInstance(canvas, config)
-          .then((unityInstance2) => {
-            unityInstance = unityInstance2;
-            window.unityInstance = unityInstance;
+      	createUnityInstance(canvas, config, (progress) => {
+      		customBar.style.width = 100 * progress + "%";
+      	})
+      		.then((unityInstance2) => {
+      			unityInstance = unityInstance2;
+      			window.unityInstance = unityInstance;
+      			customLoader.style.display = "none";
+      			customLogo.style.display = "none";
 
-            // Auto fullscreen on load
-            unityInstance2.SetFullscreen(1);
-          })
-          .catch((message) => {
-            alert(message);
-          });
+      			// Auto fullscreen on load
+      			unityInstance2.SetFullscreen(1);
+
+      			fullscreenButton.onclick = () => {
+      				unityInstance2.SetFullscreen(1);
+      			};
+      		})
+      		.catch((message) => {
+      			alert(message);
+      		});
       };
       document.body.appendChild(script);
     </script>
